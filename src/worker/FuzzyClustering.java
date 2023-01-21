@@ -19,14 +19,14 @@ public class FuzzyClustering {
     private int iteration;
     private int dimension;
     private int fuzziness;
-    private double gamma;
-    private double alpha;
+    private float gamma;
+    private float alpha;
     private double epsilon;
     public double finalError;
     private int width ;
     private int height ;
 
-    public FuzzyClustering(ArrayList<ArrayList<Float>> data ,  int clusterNumber,int iter, double gamma , double alpha){
+    public FuzzyClustering(ArrayList<ArrayList<Float>> data ,  int clusterNumber,int iter, float gamma , float alpha){
     	this.width = data.get(0).size();
     	this.height= data.size();
     	int size = data.size() * data.get(0).size();
@@ -34,7 +34,6 @@ public class FuzzyClustering {
     	this.data = new ArrayList<ArrayList<Float>>();
     	for(int i = 0 ; i< height; ++i) {
     		for(int j = 0 ; j< width;++j) {
-    			System.out.println(k);
     			this.data.add( new ArrayList<Float>());
     			
     			this.data.get(k).add(data.get(i).get(j));
@@ -53,14 +52,11 @@ public class FuzzyClustering {
          
         this.alpha = alpha;
         
-        if( gamma >1. || gamma <0.) {
-        	this.gamma = 0.5; 
-        }
+        this.gamma = gamma;
     }
 
     public ArrayList<ArrayList<Float>> run(){
         
-		System.out.println(data);
 
         //start algorithm
         //1 assign initial membership values
@@ -94,6 +90,10 @@ public class FuzzyClustering {
         
         data = null;
         data = new_data;
+        
+        
+        
+        
         return new_data;
     }
 
@@ -107,13 +107,15 @@ public class FuzzyClustering {
                 	big_j = j;	
                 }
             }
+            
             for (int j = 0; j < clusterCount; j++) {
-                
             	if( j == big_j) {
-            		u[i][j] = (float) (1- this.gamma + this.gamma*u[i][j]);
+            		
+                    u[i][j] =  1 - this.gamma + this.gamma*u[i][j];
+            		
             	}
             	if ( j != big_j) {
-            		u[i][j] = (float) (this.gamma * u[i][j]);
+            		u[i][j] = this.gamma * u[i][j];
             	}
             }
         }
@@ -157,26 +159,33 @@ public class FuzzyClustering {
                 	if( k> interval /2 && k <data.size() - interval/2) {
                 		for( int d = k-interval/2 ; d < k+interval/2 ; d++) {
                     		mean += data.get(d).get(0);
-                 
+                    		
                     	}
+                		mean = mean /interval;
                 	}else if (k<= interval /2) {
-                		for( int d = 0 ; d < interval; d++) {
+                		int d = 0;
+                		for( d =0 ; d <= k; d++) {
                     		mean += data.get(d).get(0);
                  
-                    	}                	
+                    	}  
+                		mean = mean /d;
                 	}else if (k >=data.size() - interval/2) {
-                		for( int d = data.size() - interval/2 ; d < data.size(); d++) {
+                		int d = 0;
+                		for( d = k ; d < data.size(); d++) {
                     		mean += data.get(d).get(0);
                  
-                    	}                	
+                    	}  
+                		mean = mean / (d-k);
                 	}
                 	
-                	mean = mean /interval;
+                	
+                	
 
                 	
                     double tt = Math.pow(u[k][i], fuzziness);
                     sum1 += tt * (data.get(k).get(j)  + this.alpha * mean);
                     sum2 += tt;
+                   
 
                 }
                 cluster_ij = sum1/(sum2 * (1+ (float)this.alpha ));
@@ -354,7 +363,7 @@ public class FuzzyClustering {
         //generate random data
         ArrayList<ArrayList<Float>> data = createRandomData(Integer.parseInt(read2),3,1,100, Integer.parseInt(read1));
         System.out.println(data);
-        FuzzyClustering cmean = new FuzzyClustering(data, 3,50,0.6,2);
+        FuzzyClustering cmean = new FuzzyClustering(data, 3,50,0.6f,2f);
 
         //write random data
         cmean.writeDataToFile(cmean.data, "data_set");

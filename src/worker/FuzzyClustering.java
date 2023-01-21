@@ -11,6 +11,7 @@ import java.util.Random;
 
 public class FuzzyClustering {
     public ArrayList<ArrayList<Float>> data;
+    public ArrayList<ArrayList<Float>> new_data ;
     public ArrayList<ArrayList<Float>> clusterCenters;
     private float u[][];
     private float u_pre[][];
@@ -18,22 +19,48 @@ public class FuzzyClustering {
     private int iteration;
     private int dimension;
     private int fuzziness;
+    private double gamma;
+    private double alpha;
     private double epsilon;
     public double finalError;
+    private int width ;
+    private int height ;
 
-    public FuzzyClustering(ArrayList<ArrayList<Float>> data , int dimension, int clusterNumber,int iter){
-        this.data = data;
+    public FuzzyClustering(ArrayList<ArrayList<Float>> data ,  int clusterNumber,int iter, double gamma , double alpha){
+    	this.width = data.get(0).size();
+    	this.height= data.size();
+    	int size = data.size() * data.get(0).size();
+    	int k =0;
+    	this.data = new ArrayList<ArrayList<Float>>();
+    	for(int i = 0 ; i< height; ++i) {
+    		for(int j = 0 ; j< width;++j) {
+    			System.out.println(k);
+    			this.data.add( new ArrayList<Float>());
+    			
+    			this.data.get(k).add(data.get(i).get(j));
+    			k++;
+    		}
+    	}
+    		
+    		
+        
         clusterCenters = new ArrayList<>();
         fuzziness = 2;
         epsilon = 0.01;
-        this.dimension= dimension; 
+        this.dimension= 1; 
         this.clusterCount = clusterNumber;
         this.iteration = iter;
+         
+        this.alpha = alpha;
+        
+        if( gamma >1. || gamma <0.) {
+        	this.gamma = 0.5; 
+        }
     }
 
-    public void run(){
+    public ArrayList<ArrayList<Float>> run(){
         
-        
+		System.out.println(data);
 
         //start algorithm
         //1 assign initial membership values
@@ -47,15 +74,50 @@ public class FuzzyClustering {
             updateMembershipValues();
 
             //4
+            modifyMembershipValues();
+            //5
             finalError = checkConvergence();
             if(finalError <= epsilon)
                 break;
         }
         
-         
+        this.new_data =new ArrayList<>();
+        int k = 0;
+        for(int i = 0 ; i< height; ++i) {
+    		for(int j = 0 ; j< width;++j) {
+    			
+    			this.new_data.add( new ArrayList<Float>());
+    			this.new_data.get(i).add( data.get(k).get(0) );
+    			k++;
+    		}
+    	}
+        
+        data = null;
+        data = new_data;
+        return new_data;
     }
 
-    
+    private void modifyMembershipValues() {
+    	for (int i = 0; i < data.size(); i++) {
+            float big = 0;
+            int big_j = 0;
+            for (int j = 0; j < clusterCount; j++) {
+                if( u[i][j] > big) {
+                	big = u[i][j];
+                	big_j = j;	
+                }
+            }
+            for (int j = 0; j < clusterCount; j++) {
+                
+            	if( j == big_j) {
+            		u[i][j] = (float) (1- this.gamma + this.gamma*u[i][j]);
+            	}
+            	if ( j != big_j) {
+            		u[i][j] = (float) (this.gamma * u[i][j]);
+            	}
+            }
+        }
+    }
 
     /**
      * this function generate membership value for each data
@@ -81,18 +143,43 @@ public class FuzzyClustering {
      */
     private void calculateClusterCenters(){
         clusterCenters.clear();
+        int interval = 9;
         for (int i = 0; i < clusterCount; i++) {
             ArrayList<Float> tmp = new ArrayList<>();
             for (int j = 0; j < dimension; j++) {
                 float cluster_ij;
                 float sum1 = 0;
                 float sum2 = 0;
+                
+                
                 for (int k = 0; k < data.size(); k++) {
+                	float mean = 0;
+                	if( k> interval /2 && k <data.size() - interval/2) {
+                		for( int d = k-interval/2 ; d < k+interval/2 ; d++) {
+                    		mean += data.get(d).get(0);
+                 
+                    	}
+                	}else if (k<= interval /2) {
+                		for( int d = 0 ; d < interval; d++) {
+                    		mean += data.get(d).get(0);
+                 
+                    	}                	
+                	}else if (k >=data.size() - interval/2) {
+                		for( int d = data.size() - interval/2 ; d < data.size(); d++) {
+                    		mean += data.get(d).get(0);
+                 
+                    	}                	
+                	}
+                	
+                	mean = mean /interval;
+
+                	
                     double tt = Math.pow(u[k][i], fuzziness);
-                    sum1 += tt * data.get(k).get(j);
+                    sum1 += tt * (data.get(k).get(j)  + this.alpha * mean);
                     sum2 += tt;
+
                 }
-                cluster_ij = sum1/sum2;
+                cluster_ij = sum1/(sum2 * (1+ (float)this.alpha ));
                 tmp.add(cluster_ij);
             }
             clusterCenters.add(tmp);
@@ -103,16 +190,46 @@ public class FuzzyClustering {
      * in this function we will update membership value
      */
     private void updateMembershipValues(){
+    	int interval =  9 ;
         for (int i = 0; i < data.size(); i++) {
             for (int j = 0; j < clusterCount; j++) {
                 u_pre[i][j] = u[i][j];
                 float sum = 0;
+
+
                 float upper = Distance(data.get(i), clusterCenters.get(j));
+                
+                
+                float mean = 0;
+            	if( i> interval /2 && i <data.size() - interval/2) {
+            		for( int d = i-interval/2 ; d < i+interval/2 ; d++) {
+                		mean += data.get(d).get(0);
+             
+                	}
+            	}else if (i< interval /2) {
+            		for( int d = 0 ; d < interval; d++) {
+                		mean += data.get(d).get(0);
+             
+                	}                	
+            	}else if (i >data.size() - interval/2) {
+            		for( int d = data.size() - interval/2 ; d < data.size(); d++) {
+                		mean += data.get(d).get(0);
+             
+                	}                	
+            	}
+            	
+            	mean = mean /interval;
+            	
+            	upper += this.alpha * ( Distance(mean , clusterCenters.get(j)));
+            	upper = (float) Math.pow(upper, -1/(fuzziness -1));
+                
+            	
                 for (int k = 0; k < clusterCount; k++) {
                     float lower = Distance(data.get(i), clusterCenters.get(k));
-                    sum += Math.pow((upper/lower), 2/(fuzziness -1));
+                    lower +=  this.alpha * ( Distance(mean , clusterCenters.get(k)));
+                    sum += Math.pow(lower, -1/(fuzziness -1));
                 }
-                u[i][j] = 1/sum;
+                u[i][j] = upper/sum;
             }
         }
     }
@@ -131,7 +248,23 @@ public class FuzzyClustering {
         sum = (float) Math.sqrt(sum);
         return sum;
     }
-
+    private float Distance(float p1, ArrayList<Float> p2){
+        float sum = 0;
+        for (int i = 0; i < p2.size(); i++) {
+            sum += Math.pow(p1 - p2.get(i), 2);
+        }
+        sum = (float) Math.sqrt(sum);
+        return sum;
+    }
+    private float Distance(ArrayList<Float> p1, float p2){
+        float sum = 0;
+        for (int i = 0; i < p1.size(); i++) {
+            sum += Math.pow(p1.get(i) - p2, 2);
+        }
+        sum = (float) Math.sqrt(sum);
+        return sum;
+    }
+    
     /**
      * we calculate norm 2 of ||U - U_pre||
      * @return
@@ -168,7 +301,73 @@ public class FuzzyClustering {
         printWriter.close();
     }
     
-    
-    
+     public static ArrayList<ArrayList<Float>> createRandomData(int numberOfData, int dimension, int minRange, int maxRange, int clusterCount){
+    	 ArrayList<ArrayList<Float>> data = new ArrayList<>();
+        ArrayList<ArrayList<Integer>> centroids = new ArrayList<>();
+        centroids.add(new ArrayList<Integer>());
+        int[] numberOfDataInEachArea = new int[clusterCount];
+        int range = maxRange - minRange + 1;
+        int step = range / (clusterCount + 1);
+        for (int i = 1; i <= clusterCount; i++) {
+            centroids.get(0).add(minRange + i * step);
+        }
+
+        for (int i = 0; i < dimension - 1; i++) {
+            centroids.add((ArrayList<Integer>) centroids.get(0).clone());
+        }
+        double variance = (centroids.get(0).get(1) - centroids.get(0).get(0))/ 2.5;
+        for (int i = 0; i < dimension; i++) {
+            Collections.shuffle(centroids.get(i));
+        }
+        Random r = new Random();
+        int sum = 0;
+        for (int i = 0; i < clusterCount; i++) {
+            int rg = r.nextInt(50) + 10;
+            numberOfDataInEachArea[i] = (rg);
+            sum += rg;
+        }
+        for (int i = 0; i < clusterCount; i++)
+            numberOfDataInEachArea[i] = (int)((((double)numberOfDataInEachArea[i]) / sum) * numberOfData);
+
+        Random fRandom = new Random();
+        for (int i = 0; i < clusterCount; i++) {
+            for (int j = 0; j < numberOfDataInEachArea[i]; j++) {
+                ArrayList<Float> tmp = new ArrayList<>();
+                for (int k = 0; k < dimension; k++) {
+                    tmp.add((float)(centroids.get(k).get(i) + fRandom.nextGaussian() * variance));
+                }
+                data.add(tmp);
+            }
+        }
+        return data;
+    }
+
+    public static void main(String[] args) throws IOException {
+
+        //get number of class from user
+        System.out.println("Please input number of cluster that you want :");
+
+        String read1 = "3";
+        System.out.println("please input size of data set :");
+        String read2 = "20";
+
+        //generate random data
+        ArrayList<ArrayList<Float>> data = createRandomData(Integer.parseInt(read2),3,1,100, Integer.parseInt(read1));
+        System.out.println(data);
+        FuzzyClustering cmean = new FuzzyClustering(data, 3,50,0.6,2);
+
+        //write random data
+        cmean.writeDataToFile(cmean.data, "data_set");
+
+        //run clustering algorithm
+        cmean.run();
+
+      //write random data
+        cmean.writeDataToFile(cmean.data, "data_set_2");
+        
+        //write cluster center to file
+        cmean.writeDataToFile(cmean.clusterCenters, "cluster_centers");
+        System.out.println("Clustering Finished!!!");
+    }
 
 }

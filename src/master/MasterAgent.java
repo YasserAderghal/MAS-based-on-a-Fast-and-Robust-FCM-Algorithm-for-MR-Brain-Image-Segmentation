@@ -3,6 +3,7 @@ package master;
 import static java.lang.System.out;
 
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -86,9 +87,16 @@ public class MasterAgent extends Agent {
 							break;
 						}
 						case ACLMessage.CONFIRM: {
-							
+							ImageIcon imageIcon = (ImageIcon)aclMessage.getContentObject();
 							out.println("Confirmed from worker agent: " + aclMessage.getSender().getName());
-							out.println("Path: " + aclMessage.getContentObject());
+							out.println("Path: " + imageIcon);
+							BufferedImage image = convertToBufferedImage( imageIcon.getImage());
+							try {
+				            	ImageIO.write(  image , "jpg", new File("image-.jpg"));
+				            }catch(Exception e) {
+				            	e.printStackTrace();
+				            }
+							
 							break;
 						}
 						}
@@ -126,6 +134,16 @@ public class MasterAgent extends Agent {
 		return workers;
 	}
 	
+	public static BufferedImage convertToBufferedImage(Image image)
+	{
+	    BufferedImage newImage = new BufferedImage(
+	        image.getWidth(null), image.getHeight(null),
+	        BufferedImage.TYPE_INT_ARGB);
+	    Graphics2D g = newImage.createGraphics();
+	    g.drawImage(image, 0, 0, null);
+	    g.dispose();
+	    return newImage;
+	}
 	
 	public BufferedImage[] splitImage(String file , int size) {
 		
@@ -173,7 +191,7 @@ public class MasterAgent extends Agent {
         }
         
       //writing sub-images into image files
-        for (int i = 0; i < 16; i++)
+        for (int i = 0; i < size; i++)
         {
             File outputFile = new File("/home/yasser/Project/Java/eclipse-workflow/MAS-based-on-a-Fast-and-Robust-FCM-Algorithm-for-MR-Brain-Image-Segmentation/images/" + "sub-img" + i + ".jpg");
             try {

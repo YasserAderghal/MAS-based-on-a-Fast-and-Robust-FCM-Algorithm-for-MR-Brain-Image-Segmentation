@@ -34,6 +34,7 @@ import static java.lang.System.out;
 
 
 public class WorkerAgent extends Agent {
+
 	protected void setup() {
 		DFAgentDescription agentDescription = new DFAgentDescription();
 		agentDescription.setName(this.getAID());
@@ -69,27 +70,30 @@ public class WorkerAgent extends Agent {
 							ImageIcon img = (ImageIcon) aclMessage.getContentObject();
 							Image img_temp = img.getImage();
 //							BufferedImage image = (BufferedImage) img_temp;
-							BufferedImage image = convertToBufferedImage(img_temp);
+							BufferedImage image = toBufferedImage(img_temp);
 							int image_type = image.getType();
+							int width = image.getWidth();
+							int height = image.getHeight();
+							
+							out.println(width + ":" + height);
+							
+							
 							ArrayList<ArrayList<Float>> data = getMatrixOfImage(image);
 							
-							FuzzyClustering FCM = new FuzzyClustering( data , 3, 10 , 2.f , 0.5f);
-							data = null;
-							data = FCM.run();
 							
-							image = null;
-							image = getImageOfMatrix(data, image_type);
-//							data = FCM.data;
-//							out.print(data);
-//						    for(int i=0; i< data.size() ; i++) {
-//						        for(int j=0; j< data.get(0).size(); j++) {
-//						            
-//						            int a = data.get(i).get(j).intValue();
-//						            
-//						            Color newColor = new Color(a,a,a);
-//						            image.setRGB(j,i,newColor.getRGB());
-//						        }
-//						    }
+//							out.println(data);
+							FuzzyClustering FCM = new FuzzyClustering( data,1);
+							data = null;
+							
+							ArrayList<Integer> segmentation = FCM.run(3,50);
+							
+							for(int i =0; i< segmentation.size();i++)
+								out.println(segmentation.get(i));
+							
+//							image = null;
+							image = getImageOfMatrix(segmentation, image_type, width , height);
+
+							
 //							
 							try {
 		    	 				ImageIO.write(image, "jpg",new File("imgFilter1.jpg"));    	 		        
@@ -139,30 +143,56 @@ public class WorkerAgent extends Agent {
 	    return newImage;
 	}
 	
-	
-	private ArrayList<ArrayList<Float>> getMatrixOfImage(BufferedImage bufferedImage) {
-	    int width = bufferedImage.getWidth(null);
-	    int height = bufferedImage.getHeight(null);
-	    ArrayList<ArrayList<Float>> pixels = new ArrayList<>();
-	    for (int i = 0; i < width; i++) {
-	    	pixels.add( new ArrayList<Float>());
-	        for (int j = 0; j < height; j++) {	
-	            pixels.get(i).add(new Float(  bufferedImage.getRGB(i, j)));
-	            
-	        }
+	public static BufferedImage toBufferedImage(Image img)
+	{
+	    if (img instanceof BufferedImage)
+	    {
+	        return (BufferedImage) img;
 	    }
 
+	    // Create a buffered image with transparency
+	    BufferedImage bimage = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+
+	    // Draw the image on to the buffered image
+	    Graphics2D bGr = bimage.createGraphics();
+	    bGr.drawImage(img, 0, 0, null);
+	    bGr.dispose();
+
+	    // Return the buffered image
+	    return bimage;
+	}
+	
+	private ArrayList<ArrayList<Float>> getMatrixOfImage(BufferedImage bufferedImage) {
+	    int width = bufferedImage.getWidth();
+	    int height = bufferedImage.getHeight();
+	    ArrayList<ArrayList<Float>> pixels = new ArrayList<>();
+	
+	    int k = 0;
+
+	    for(int i = 0 ; i< height; ++i) {
+    		for(int j = 0 ; j< width;++j) {
+    			pixels.add( new ArrayList<Float>());
+    			
+    			pixels.get(k).add( new Float(  bufferedImage.getRGB(i, j)) );
+    			k++;
+    		}
+    	}
+	    
+	    out.println(width + ":" + height);
+	   
+	    out.println("size "+ pixels.size());
+
+	    out.println("finished here");
 	    return pixels;
 	}
 	
-	private BufferedImage getImageOfMatrix(ArrayList<ArrayList<Float>> image, int type) {
-	    int width = image.get(0).size();
-	    int height = image.size();
+	private BufferedImage getImageOfMatrix(ArrayList<Integer> image, int type , int width , int height) {
+		int k = 0;
 	    BufferedImage pixels = new BufferedImage(width, height , type);
 	    for (int i = 0; i < width; i++) {
 	    	out.println(i + ": " + width + " : " + height);
 	        for (int j = 0; j < height; j++) {
-	            pixels.setRGB(j, i, image.get(i).get(j).intValue() %256);
+	            pixels.setRGB(j, i, image.get(k++) %256);
 	            
 	        }
 	    }

@@ -68,23 +68,35 @@ public class WorkerAgent extends Agent {
 							out.println("Worker agent: " + getName() + "Recieved a job from: " + aclMessage.getSender().getName());
 							ImageIcon img = (ImageIcon) aclMessage.getContentObject();
 							Image img_temp = img.getImage();
-							BufferedImage image = (BufferedImage) img_temp;
+//							BufferedImage image = (BufferedImage) img_temp;
+							BufferedImage image = convertToBufferedImage(img_temp);
+							int image_type = image.getType();
 							ArrayList<ArrayList<Float>> data = getMatrixOfImage(image);
 							
-							FuzzyClustering FCM = new FuzzyClustering( data , data.get(0).size(), 4 , 10);
-							FCM.run();
-							data = FCM.data;
-						    for(int i=0; i< data.size() ; i++) {
-						        for(int j=0; j< data.get(0).size(); j++) {
-						            
-						            int a = data.get(i).get(j).intValue();
-						            
-						            Color newColor = new Color(a,a,a);
-						            image.setRGB(j,i,newColor.getRGB());
-						        }
-						    }
+							FuzzyClustering FCM = new FuzzyClustering( data , 3, 10 , 2.f , 0.5f);
+							data = null;
+							data = FCM.run();
 							
-							
+							image = null;
+							image = getImageOfMatrix(data, image_type);
+//							data = FCM.data;
+//							out.print(data);
+//						    for(int i=0; i< data.size() ; i++) {
+//						        for(int j=0; j< data.get(0).size(); j++) {
+//						            
+//						            int a = data.get(i).get(j).intValue();
+//						            
+//						            Color newColor = new Color(a,a,a);
+//						            image.setRGB(j,i,newColor.getRGB());
+//						        }
+//						    }
+//							
+							try {
+		    	 				ImageIO.write(image, "jpg",new File("imgFilter1.jpg"));    	 		        
+		  					} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 		    	 			
 		    	 			//send to master
 
@@ -116,14 +128,42 @@ public class WorkerAgent extends Agent {
 		}
 	}
 	
+	public static BufferedImage convertToBufferedImage(Image image)
+	{
+	    BufferedImage newImage = new BufferedImage(
+	        image.getWidth(null), image.getHeight(null),
+	        BufferedImage.TYPE_INT_ARGB);
+	    Graphics2D g = newImage.createGraphics();
+	    g.drawImage(image, 0, 0, null);
+	    g.dispose();
+	    return newImage;
+	}
+	
 	
 	private ArrayList<ArrayList<Float>> getMatrixOfImage(BufferedImage bufferedImage) {
 	    int width = bufferedImage.getWidth(null);
 	    int height = bufferedImage.getHeight(null);
 	    ArrayList<ArrayList<Float>> pixels = new ArrayList<>();
 	    for (int i = 0; i < width; i++) {
-	        for (int j = 0; j < height; j++) {
+	    	pixels.add( new ArrayList<Float>());
+	        for (int j = 0; j < height; j++) {	
 	            pixels.get(i).add(new Float(  bufferedImage.getRGB(i, j)));
+	            
+	        }
+	    }
+
+	    return pixels;
+	}
+	
+	private BufferedImage getImageOfMatrix(ArrayList<ArrayList<Float>> image, int type) {
+	    int width = image.get(0).size();
+	    int height = image.size();
+	    BufferedImage pixels = new BufferedImage(width, height , type);
+	    for (int i = 0; i < width; i++) {
+	    	out.println(i + ": " + width + " : " + height);
+	        for (int j = 0; j < height; j++) {
+	            pixels.setRGB(j, i, image.get(i).get(j).intValue() %256);
+	            
 	        }
 	    }
 

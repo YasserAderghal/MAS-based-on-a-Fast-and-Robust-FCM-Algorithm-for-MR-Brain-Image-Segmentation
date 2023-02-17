@@ -31,15 +31,15 @@ public class FuzzyClustering {
     	this.height= data.size();
     	int size = data.size() * data.get(0).size();
     	int k =0;
-//    	this.data = new ArrayList<ArrayList<Float>>();
-//    	for(int i = 0 ; i< height; ++i) {
-//    		for(int j = 0 ; j< width;++j) {
-//    			this.data.add( new ArrayList<Float>());
-//    			
-//    			this.data.get(k).add(data.get(i).get(j));
-//    			k++;
-//    		}
-//    	}
+    	this.data = new ArrayList<ArrayList<Float>>();
+    	for(int i = 0 ; i< height; ++i) {
+    		for(int j = 0 ; j< width;++j) {
+    			this.data.add( new ArrayList<Float>());
+    			
+    			this.data.get(k).add(data.get(i).get(j));
+    			k++;
+    		}
+    	}
     	this.data = data;
     		
         
@@ -77,19 +77,19 @@ public class FuzzyClustering {
                 break;
         }
         
-//        this.new_data =new ArrayList<>();
-//        int k = 0;
-//        for(int i = 0 ; i< height; ++i) {
-//    		for(int j = 0 ; j< width;++j) {
-//    			
-//    			this.new_data.add( new ArrayList<Float>());
-//    			this.new_data.get(i).add( data.get(k).get(0) );
-//    			k++;
-//    		}
-//    	}
-        
-//        data = null;
-//        data = new_data;
+        this.new_data =new ArrayList<>();
+        int k = 0;
+        for(int i = 0 ; i< height; ++i) {
+    		for(int j = 0 ; j< width;++j) {
+    			
+    			this.new_data.add( new ArrayList<Float>());
+    			this.new_data.get(i).add( data.get(k).get(0) );
+    			k++;
+    		}
+    	}
+      
+        data = null;
+        data = new_data;
         
         
         
@@ -156,21 +156,21 @@ public class FuzzyClustering {
                 
                 for (int k = 0; k < data.size(); k++) {
                 	float mean = 0;
-//                	for ( int x = -3 ; x<=3 ; x++) {
-//                		for (int y = -3 ; y<=3 ; y++) {
-//                			if ( j+ x <0 || j+x >= dimension) {
-//                    			continue;
-//                    		}
-//                			
-//                			if ( k + y < 0 || k +y>= data.size()) {
-//                				continue;
-//                			}
-//                			
-//                			mean += data.get(k+y).get(j+x);
-//                		}
-//                		
-//                		
-//                	}
+                	for ( int x = -3 ; x<=3 ; x++) {
+                		for (int y = -3 ; y<=3 ; y++) {
+                			if ( j+ x <0 || j+x >= dimension) {
+                    			continue;
+                    		}
+                			
+                			if ( k + y < 0 || k +y>= data.size()) {
+                				continue;
+                			}
+                			
+                			mean += data.get(k+y).get(j+x);
+                		}
+                		
+                		
+                	}
                 	mean = (float)data.get(k).stream().reduce(0.0f,(a,b) -> a+b);
                 	
                 	mean = mean / dimension;
@@ -354,33 +354,4 @@ public class FuzzyClustering {
         }
         return data;
     }
-
-    public static void main(String[] args) throws IOException {
-
-        //get number of class from user
-        System.out.println("Please input number of cluster that you want :");
-
-        String read1 = "3";
-        System.out.println("please input size of data set :");
-        String read2 = "20";
-
-        //generate random data
-        ArrayList<ArrayList<Float>> data = createRandomData(Integer.parseInt(read2),3,1,100, Integer.parseInt(read1));
-        System.out.println(data);
-        FuzzyClustering cmean = new FuzzyClustering(data, 3,50,0.6f,2f);
-
-        //write random data
-        cmean.writeDataToFile(cmean.data, "data_set");
-
-        //run clustering algorithm
-        cmean.run();
-
-      //write random data
-        cmean.writeDataToFile(cmean.u, "centers");
-        
-        //write cluster center to file
-        cmean.writeDataToFile(cmean.clusterCenters, "cluster_centers");
-        System.out.println("Clustering Finished!!!");
-    }
-
 }
